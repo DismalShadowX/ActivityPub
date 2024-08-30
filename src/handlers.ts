@@ -79,6 +79,11 @@ export async function followAction(
     const apCtx = fedify.createContext(ctx.req.raw as Request, {
         db: ctx.get('db'),
         globaldb: ctx.get('globaldb'),
+        activityService: ctx.get('activityService'),
+        actorService: ctx.get('actorService'),
+        inboxService: ctx.get('inboxService'),
+        objectService: ctx.get('objectService'),
+        site: ctx.get('site'),
     });
     const actor = await apCtx.getActor(ACTOR_DEFAULT_HANDLE); // TODO This should be the actor making the request
     const followId = apCtx.getObjectUri(Follow, {
@@ -118,6 +123,11 @@ export async function postPublishedWebhook(
     const apCtx = fedify.createContext(ctx.req.raw as Request, {
         db: ctx.get('db'),
         globaldb: ctx.get('globaldb'),
+        activityService: ctx.get('activityService'),
+        actorService: ctx.get('actorService'),
+        inboxService: ctx.get('inboxService'),
+        objectService: ctx.get('objectService'),
+        site: ctx.get('site'),
     });
     const { article, preview } = await postToArticle(
         apCtx,
@@ -207,6 +217,11 @@ export async function siteChangedWebhook(
         const apCtx = fedify.createContext(ctx.req.raw as Request, {
             db,
             globaldb: ctx.get('globaldb'),
+            activityService: ctx.get('activityService'),
+            actorService: ctx.get('actorService'),
+            inboxService: ctx.get('inboxService'),
+            objectService: ctx.get('objectService'),
+            site: ctx.get('site'),
         });
 
         const actor = await apCtx.getActor(handle);
@@ -241,35 +256,25 @@ export async function inboxHandler(
     ctx: Context<{ Variables: HonoContextVariables }>,
     next: Next,
 ) {
-    const results = (await ctx.get('db').get<string[]>(['inbox'])) || [];
-    let items: unknown[] = [];
+    const actor = await ctx.get('actorService').findById('https://localhost/users/1')
+    if (!actor) {
+        throw new Error('actor not found');
+    }
+    const site = await ctx.get('site');
+    const results = await ctx.get('inboxService').getInboxForActor(actor, site);
+    const items = [];
+
     for (const result of results) {
-        try {
-            const db = ctx.get('globaldb');
-            const thing = await db.get<StoredThing>([result]);
-
-            // If the object is a string, it's probably a URI, so we should
-            // look it up the db. If it's not in the db, we should just leave
-            // it as is
-            if (thing && typeof thing.object === 'string') {
-                thing.object = await db.get([thing.object]) ?? thing.object;
-            }
-
-            // Sanitize HTML content
-            if (thing?.object && typeof thing.object !== 'string') {
-                thing.object.content = sanitizeHtml(thing.object.content, {
-                    allowedTags: ['a', 'p', 'img', 'br', 'strong', 'em', 'span'],
-                    allowedAttributes: {
-                        a: ['href'],
-                        img: ['src'],
-                    }
-                });
-            }
-
-            items.push(thing);
-        } catch (err) {
-            console.log(err);
-        }
+        items.push({
+            id: result.id,
+            type: result.type,
+            actor: result.actor.data,
+            object: result.object.data,
+            "@context": [
+                "https://www.w3.org/ns/activitystreams",
+                "https://w3id.org/security/data-integrity/v1"
+            ]
+        });
     }
     return new Response(
         JSON.stringify({

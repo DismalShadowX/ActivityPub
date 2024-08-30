@@ -17,3 +17,49 @@ await client.schema.createTableIfNotExists('key_value', function (table) {
     table.json('value').notNullable();
     table.datetime('expires').nullable();
 });
+
+// Truncate and insert's are just used for dev purposes
+
+const TABLE_SITES = 'sites';
+await client.schema.createTableIfNotExists(TABLE_SITES, function (table) {
+    table.increments('id').primary();
+    table.string('hostname', 2048);
+});
+await client.table(TABLE_SITES).truncate();
+
+const TABLE_ACTORS = 'actors';
+await client.schema.createTableIfNotExists(TABLE_ACTORS, function (table) {
+    table.string('id').primary();
+    table.json('data').notNullable();
+});
+await client.table(TABLE_ACTORS).truncate();
+await client.table(TABLE_ACTORS).insert({
+    id: 'https://localhost/users/1',
+    data: {
+        id: 'https://localhost/users/1'
+    },
+});
+
+const TABLE_OBJECTS = 'objects';
+await client.schema.createTableIfNotExists(TABLE_OBJECTS, function (table) {
+    table.string('id').primary();
+    table.json('data').notNullable();
+});
+await client.table(TABLE_OBJECTS).truncate();
+
+const TABLE_ACTIVITIES = 'activities';
+await client.schema.createTableIfNotExists(TABLE_ACTIVITIES, function (table) {
+    table.string('id').primary();
+    table.enum('type', ['Like']);
+    table.string('actor_id');
+    table.string('object_id');
+});
+await client.table(TABLE_ACTIVITIES).truncate();
+
+const TABLE_INBOX = 'inbox';
+await client.schema.createTableIfNotExists(TABLE_INBOX, function (table) {
+    table.integer('site_id');
+    table.string('actor_id');
+    table.string('activity_id');
+});
+await client.table(TABLE_INBOX).truncate();

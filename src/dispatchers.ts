@@ -22,6 +22,7 @@ import { addToList } from './kv-helpers';
 import { ContextData } from './app';
 import { ACTOR_DEFAULT_HANDLE } from './constants';
 import { getUserData, getUserKeypair } from './user';
+import { ActivityType } from '_/entity/ActivityEntity';
 
 export async function actorDispatcher(
     ctx: RequestContext<ContextData>,
@@ -236,7 +237,7 @@ export async function handleLike(
 ) {
     console.log('Handling Like');
 
-    // Validate like
+    // Validate activity
     if (!like.id) {
         console.log('Invalid Like - no id');
         return;
@@ -255,18 +256,29 @@ export async function handleLike(
         return;
     }
 
-    // Lookup liked object - If not found in globalDb, perform network lookup
-    let object = null;
-    let existing = await ctx.data.globaldb.get([like.objectId.href]) ?? null;
+    // Persist sender details
+    let storedSender = await ctx.data.actorService.findById(sender.id.href);
+    if (!storedSender) {
+        await ctx.data.actorService.create({
+            id: sender.id.href,
+            data: await sender.toJsonLd() as JSON
+        });
+    } else {
+        // Update sender?
+    }
 
-    if (!existing) {
-        console.log('Object not found in globalDb, performing network lookup');
+    // Lookup associated object - If not found locally, perform network lookup
+    let object = null;
+    let storedObject = await ctx.data.objectService.findById(like.objectId.href);
+
+    if (!storedObject) {
+        console.log('Object not found locally, performing network lookup');
 
         object = await like.getObject();
     }
 
     // Validate object
-    if (!existing && !object) {
+    if (!storedObject && !object) {
         console.log('Invalid Like - could not find object');
         return;
     }
@@ -276,21 +288,33 @@ export async function handleLike(
         return;
     }
 
-    // Persist like
-    const likeJson = await like.toJsonLd();
-    ctx.data.globaldb.set([like.id.href], likeJson);
-
     // Persist object if not already persisted
-    if (!existing && object && object.id) {
-        console.log('Storing object in globalDb');
+    if (!storedObject && object && object.id) {
+        console.log('Storing object in db');
 
-        const objectJson = await object.toJsonLd();
+        const objectJSON = await object.toJsonLd() as JSON;
 
-        ctx.data.globaldb.set([object.id.href], objectJson);
+        storedObject = await ctx.data.objectService.create({
+            id: object.id.href,
+            data: objectJSON
+        });
     }
 
+    // Persist activity
+    const actor = await ctx.data.actorService.findById('https://localhost/users/1');
+    if (!actor) {
+        throw new Error('actor not found');
+    }
+    const activity = await ctx.data.activityService.create({
+        id: like.id.href,
+        type: ActivityType.LIKE,
+        actor_id: actor.id,
+        object_id: storedObject.id,
+    });
+
     // Add to inbox
-    await addToList(ctx.data.db, ['inbox'], like.id.href);
+    const site = await ctx.data.site
+    await ctx.data.inboxService.addActivityForActor(site, actor, activity);
 }
 
 export async function inboxErrorHandler(

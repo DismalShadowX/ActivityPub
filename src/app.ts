@@ -63,9 +63,38 @@ await configure({
     loggers: [{ category: 'fedify', sinks: ['console'], level: 'debug' }],
 });
 
+/** Services */
+
+import { ActivityRepository } from './_/repository/ActivityRepository';
+import { ActivityService } from './_/service/ActivityService';
+import { ActorRepository } from './_/repository/ActorRepository';
+import { ActorService } from './_/service/ActorService';
+import { InboxRepository } from './_/repository/InboxRepository';
+import { InboxService } from './_/service/InboxService';
+import { ObjectRepository } from './_/repository/ObjectRepository';
+import { ObjectService } from './_/service/ObjectService';
+import { SiteEntity } from './_/entity/SiteEntity';
+import { SiteRepository } from './_/repository/SiteRepository';
+import { SiteService } from './_/service/SiteService';
+
+const actorService = new ActorService(new ActorRepository(client));
+const objectService = new ObjectService(new ObjectRepository(client));
+const siteService = new SiteService(new SiteRepository(client));
+const activityService = new ActivityService(new ActivityRepository(client), actorService, objectService);
+const inboxService = new InboxService(activityService, new InboxRepository(client));
+
+export const db = await KnexKvStore.create(client, 'key_value');
+
+/** Fedify */
+
 export type ContextData = {
     db: KvStore;
     globaldb: KvStore;
+    activityService: ActivityService;
+    actorService: ActorService;
+    inboxService: InboxService;
+    objectService: ObjectService;
+    site: SiteEntity;
 };
 
 const fedifyKv = await KnexKvStore.create(client, 'key_value');
@@ -74,10 +103,6 @@ export const fedify = createFederation<ContextData>({
     kv: fedifyKv,
     skipSignatureVerification: process.env.SKIP_SIGNATURE_VERIFICATION === 'true' && process.env.NODE_ENV === 'testing',
 });
-
-export const db = await KnexKvStore.create(client, 'key_value');
-
-/** Fedify */
 
 /**
  * Fedify does not pass the correct context object when running outside of the request context
@@ -178,6 +203,11 @@ fedify.setObjectDispatcher(
 export type HonoContextVariables = {
     db: KvStore;
     globaldb: KvStore;
+    activityService: ActivityService;
+    actorService: ActorService;
+    inboxService: InboxService;
+    objectService: ObjectService;
+    site: SiteEntity;
 };
 
 const app = new Hono<{ Variables: HonoContextVariables }>();
@@ -242,6 +272,16 @@ app.use(async (ctx, next) => {
     ctx.set('db', scopedDb);
     ctx.set('globaldb', db);
 
+    let site = await siteService.findByHostname(host);
+    if (!site) {
+        site = await siteService.create(host);
+    }
+    ctx.set('activityService', activityService);
+    ctx.set('actorService', actorService);
+    ctx.set('inboxService', inboxService);
+    ctx.set('objectService', objectService);
+    ctx.set('site', site);
+
     await next();
 });
 
@@ -267,6 +307,11 @@ app.use(
             return {
                 db: ctx.get('db'),
                 globaldb: ctx.get('globaldb'),
+                activityService: ctx.get('activityService'),
+                actorService: ctx.get('actorService'),
+                inboxService: ctx.get('inboxService'),
+                objectService: ctx.get('objectService'),
+                site: ctx.get('site'),
             };
         },
     ),
