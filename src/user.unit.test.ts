@@ -1,5 +1,5 @@
 import { Image, RequestContext } from '@fedify/fedify';
-import assert from 'assert';
+import assert from 'node:assert';
 import sinon from 'sinon';
 
 import {
@@ -51,8 +51,8 @@ function getCtx() {
     return ctx as any;
 }
 
-describe('getUserData', function () {
-    it('persists a user to the database if it does not exist', async function () {
+describe('getUserData', () => {
+    it('persists a user to the database if it does not exist', async () => {
         const ctx = getCtx();
 
         ctx.data.db.get.resolves(null);
@@ -92,7 +92,7 @@ describe('getUserData', function () {
         assert.deepStrictEqual(result, expectedUserData);
     });
 
-    it('retrieves a user from the database', async function () {
+    it('retrieves a user from the database', async () => {
         const ctx = getCtx();
 
         const persistedUser = {
@@ -132,7 +132,7 @@ describe('getUserData', function () {
         assert.deepStrictEqual(result, expectedUserData);
     });
 
-    it('handles retrieving a user with an invalid icon', async function () {
+    it('handles retrieving a user with an invalid icon', async () => {
         const ctx = getCtx();
 
         const persistedUser = {
@@ -171,7 +171,7 @@ describe('getUserData', function () {
         assert.deepStrictEqual(result, expectedUserData);
     });
 
-    it('handles retrieving a user with an invalid URL', async function () {
+    it('handles retrieving a user with an invalid URL', async () => {
         const ctx = getCtx();
 
         const persistedUser = {

@@ -1,7 +1,7 @@
-import assert from 'assert';
+import assert from 'node:assert';
 
-describe('Sanity', function () {
-    it('1 + 1 = 2', function () {
+describe('Sanity', () => {
+    it('1 + 1 = 2', () => {
         assert.equal(1 + 1, 2, '1 + 1 should equal 2');
     });
 });

@@ -1,4 +1,4 @@
-import assert from 'assert';
+import assert from 'node:assert';
 import sinon from 'sinon';
 import {
     actorDispatcher,
@@ -19,12 +19,12 @@ import {
     acceptDispatcher,
     createDispatcher,
 } from './dispatchers';
-import { Activity, RequestContext } from '@fedify/fedify';
+import { Activity, type RequestContext } from '@fedify/fedify';
 import { ACTOR_DEFAULT_HANDLE } from './constants';
 
-describe('dispatchers', function () {
-    describe('actorDispatcher', function () {
-        it(`returns null if the handle is not "${ACTOR_DEFAULT_HANDLE}"`, async function () {
+describe('dispatchers', () => {
+    describe('actorDispatcher', () => {
+        it(`returns null if the handle is not "${ACTOR_DEFAULT_HANDLE}"`, async () => {
             const ctx = {} as RequestContext<any>;
             const handle = 'anything';
 
@@ -34,10 +34,10 @@ describe('dispatchers', function () {
             assert.equal(actual, expected);
         });
     });
-    describe('keypairDispatcher', function () {});
-    describe('handleFollow', function () {});
+    describe('keypairDispatcher', () => {});
+    describe('handleFollow', () => {});
 
-    describe('outboxDispatcher', function () {
+    describe('outboxDispatcher', () => {
         const outboxActivities: Record<string, any> = {
             'https://example.com/create/123': {
                 '@context': [
@@ -84,15 +84,15 @@ describe('dispatchers', function () {
             },
         } as RequestContext<any>;
 
-        beforeEach(function () {
+        beforeEach(() => {
             ctx.data.db.get.withArgs(['outbox']).resolves(Object.keys(outboxActivities));
 
-            Object.keys(outboxActivities).forEach(key => {
+            for (const key of Object.keys(outboxActivities)) {
                 ctx.data.globaldb.get.withArgs([key]).resolves(outboxActivities[key]);
-            });
+            }
         });
 
-        it('returns relevant items from the outbox in the correct order', async function () {
+        it('returns relevant items from the outbox in the correct order', async () => {
             const result = await outboxDispatcher(ctx, ACTOR_DEFAULT_HANDLE);
 
             // Check items exist

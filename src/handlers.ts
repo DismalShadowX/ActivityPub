@@ -3,20 +3,20 @@ import {
     Follow,
     Like,
     Undo,
-    RequestContext,
+    type RequestContext,
     isActor,
     Create,
     Note,
     Update,
-    Actor,
+    type Actor,
     PUBLIC_COLLECTION
 } from '@fedify/fedify';
-import { Context, Next } from 'hono';
+import type { Context, Next } from 'hono';
 import sanitizeHtml from 'sanitize-html';
 import { v4 as uuidv4 } from 'uuid';
 import { addToList, removeFromList } from './kv-helpers';
 import { toURL } from './toURL';
-import { ContextData, HonoContextVariables, fedify } from './app';
+import { type ContextData, type HonoContextVariables, fedify } from './app';
 import { getSiteSettings } from './ghost';
 import type { PersonData } from './user';
 import { ACTOR_DEFAULT_HANDLE } from './constants';
@@ -385,7 +385,7 @@ export async function inboxHandler(
         db: ctx.get('db'),
         globaldb: ctx.get('globaldb'),
     });
-    let items: unknown[] = [];
+    const items: unknown[] = [];
     for (const result of results) {
         try {
             const db = ctx.get('globaldb');
@@ -412,7 +412,7 @@ export async function inboxHandler(
                 });
             }
 
-            let objectId: string = '';
+            let objectId = '';
             if (typeof thing.object === 'string') {
                 objectId = thing.object;
             } else if (typeof thing.object.id === 'string') {

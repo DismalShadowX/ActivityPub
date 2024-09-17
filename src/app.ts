@@ -6,7 +6,7 @@ import {
     createFederation,
     Follow,
     KvKey,
-    KvStore,
+    type KvStore,
     MemoryKvStore,
     Create,
     Note,
@@ -16,12 +16,12 @@ import {
     Service,
     Update,
     Announce,
-    Context,
+    type Context,
     Like,
     Undo,
 } from '@fedify/fedify';
 import { federation } from '@fedify/fedify/x/hono';
-import { Hono, Context as HonoContext } from 'hono';
+import { Hono, type Context as HonoContext } from 'hono';
 import { cors } from 'hono/cors';
 import { behindProxy } from 'x-forwarded-fetch';
 import { configure, getConsoleSink } from '@logtape/logtape';
@@ -90,7 +90,7 @@ export const db = await KnexKvStore.create(client, 'key_value');
  * for example in the context of the Inbox Queue - so we need to wrap handlers with this.
  */
 function ensureCorrectContext<B, R>(fn: (ctx: Context<ContextData>, b: B) => Promise<R>) {
-    return async function (ctx: Context<any>, b: B) {
+    return async (ctx: Context<any>, b: B) => {
         const host = ctx.host;
         if (!ctx.data) {
             (ctx as any).data = {};
@@ -157,42 +157,42 @@ fedify
 
 fedify.setObjectDispatcher(
     Article,
-    `/.ghost/activitypub/article/{id}`,
+    '/.ghost/activitypub/article/{id}',
     articleDispatcher,
 );
 fedify.setObjectDispatcher(
     Note,
-    `/.ghost/activitypub/note/{id}`,
+    '/.ghost/activitypub/note/{id}',
     noteDispatcher,
 );
 fedify.setObjectDispatcher(
     Follow,
-    `/.ghost/activitypub/follow/{id}`,
+    '/.ghost/activitypub/follow/{id}',
     followDispatcher,
 );
 fedify.setObjectDispatcher(
     Accept,
-    `/.ghost/activitypub/accept/{id}`,
+    '/.ghost/activitypub/accept/{id}',
     acceptDispatcher,
 );
 fedify.setObjectDispatcher(
     Create,
-    `/.ghost/activitypub/create/{id}`,
+    '/.ghost/activitypub/create/{id}',
     createDispatcher,
 );
 fedify.setObjectDispatcher(
     Update,
-    `/.ghost/activitypub/update/{id}`,
+    '/.ghost/activitypub/update/{id}',
     updateDispatcher,
 );
 fedify.setObjectDispatcher(
     Like,
-    `/.ghost/activitypub/like/{id}`,
+    '/.ghost/activitypub/like/{id}',
     likeDispatcher,
 );
 fedify.setObjectDispatcher(
     Undo,
-    `/.ghost/activitypub/undo/{id}`,
+    '/.ghost/activitypub/undo/{id}',
     undoDispatcher,
 );
 
@@ -298,7 +298,7 @@ app.use(
 );
 
 function forceAcceptHeader(fn: (req: Request) => unknown) {
-    return function (request: Request) {
+    return (request: Request) => {
         request.headers.set('accept', 'application/activity+json');
         return fn(request);
     };
@@ -307,9 +307,9 @@ function forceAcceptHeader(fn: (req: Request) => unknown) {
 serve(
     {
         fetch: forceAcceptHeader(behindProxy(app.fetch)),
-        port: parseInt(process.env.PORT || '8080'),
+        port: Number.parseInt(process.env.PORT || '8080'),
     },
-    function (info) {
+    (info) => {
         console.log(`listening on ${info.address}:${info.port}`);
     },
 );

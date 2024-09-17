@@ -3,23 +3,23 @@ import {
     Accept,
     Follow,
     Person,
-    RequestContext,
+    type RequestContext,
     Create,
     Note,
     Activity,
     Update,
-    Context,
-    Announce,
+    type Context,
+    type Announce,
     isActor,
-    Actor,
+    type Actor,
     Object as APObject,
-    Recipient,
+    type Recipient,
     Like,
     Undo,
 } from '@fedify/fedify';
 import { v4 as uuidv4 } from 'uuid';
 import { addToList } from './kv-helpers';
-import { ContextData } from './app';
+import type { ContextData } from './app';
 import { ACTOR_DEFAULT_HANDLE } from './constants';
 import { getUserData, getUserKeypair } from './user';
 import { lookupActor } from './lookup-helpers';
@@ -66,7 +66,7 @@ export async function handleFollow(
     }
 
     const currentFollowers = await ctx.data.db.get<string[]>(['followers']) ?? [];
-    let shouldRecordFollower = currentFollowers.includes(sender.id.href) === false;
+    const shouldRecordFollower = currentFollowers.includes(sender.id.href) === false;
 
     // Add follow activity to inbox
     const followJson = await follow.toJsonLd();
@@ -108,10 +108,7 @@ export async function handleAccept(
     console.log('Handling Accept');
     const parsed = (ctx as any).parseUri(accept.objectId);
     console.log(parsed);
-    if (false && parsed?.type !== 'follow') {
-        console.log('Not accepting a follow - exit');
-        return;
-    }
+
     if (!accept.id) {
         console.log('Accept missing id - exit');
         return;
@@ -140,10 +137,7 @@ export async function handleCreate(
     console.log('Handling Create');
     const parsed = (ctx as any).parseUri(create.objectId);
     console.log(parsed);
-    if (false && parsed?.type !== 'article') {
-        console.log('Not accepting a follow - exit');
-        return;
-    }
+
     if (!create.id) {
         console.log('Accept missing id - exit');
         return;
@@ -188,7 +182,7 @@ export async function handleAnnounce(
 
     // Lookup announced object - If not found in globalDb, perform network lookup
     let object = null;
-    let existing = await ctx.data.globaldb.get([announce.objectId.href]) ?? null;
+    const existing = await ctx.data.globaldb.get([announce.objectId.href]) ?? null;
 
     if (!existing) {
         console.log('Object not found in globalDb, performing network lookup');
@@ -257,7 +251,7 @@ export async function handleLike(
 
     // Lookup liked object - If not found in globalDb, perform network lookup
     let object = null;
-    let existing = await ctx.data.globaldb.get([like.objectId.href]) ?? null;
+    const existing = await ctx.data.globaldb.get([like.objectId.href]) ?? null;
 
     if (!existing) {
         console.log('Object not found in globalDb, performing network lookup');
@@ -349,7 +343,7 @@ export async function followingDispatcher(
     console.log('Following Dispatcher');
     const results = (await ctx.data.db.get<string[]>(['following'])) || [];
     console.log(results);
-    let items: Person[] = [];
+    const items: Person[] = [];
     for (const result of results) {
         try {
             const thing = await lookupActor(ctx, result);
@@ -386,7 +380,7 @@ export async function outboxDispatcher(
     const results = filterOutboxActivityUris((await ctx.data.db.get<string[]>(['outbox'])) || []);
     console.log(results);
 
-    let items: Activity[] = [];
+    const items: Activity[] = [];
     for (const result of results) {
         try {
             const thing = await ctx.data.globaldb.get([result]);
@@ -418,7 +412,7 @@ export async function likedDispatcher(
     const results = (await ctx.data.db.get<string[]>(['liked'])) || [];
     console.log(results);
 
-    let items: Like[] = [];
+    const items: Like[] = [];
     for (const result of results) {
         try {
             const thing = await ctx.data.globaldb.get([result]);

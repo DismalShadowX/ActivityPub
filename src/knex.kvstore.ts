@@ -1,5 +1,5 @@
-import { KvKey, KvStore, KvStoreSetOptions } from '@fedify/fedify';
-import Knex from 'knex';
+import type { KvKey, KvStore, KvStoreSetOptions } from '@fedify/fedify';
+import type Knex from 'knex';
 
 export class KnexKvStore implements KvStore {
     private constructor(

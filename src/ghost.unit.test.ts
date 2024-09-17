@@ -1,4 +1,4 @@
-import assert from 'assert';
+import assert from 'node:assert';
 import sinon from 'sinon';
 import ky from 'ky';
 import { getSiteSettings } from './ghost';
@@ -8,20 +8,20 @@ import {
     ACTOR_DEFAULT_SUMMARY
 } from './constants';
 
-describe('getSiteSettings', function () {
+describe('getSiteSettings', () => {
     const host = 'example.com';
 
     let kyGetStub: sinon.SinonStub;
 
-    beforeEach(function () {
+    beforeEach(() => {
         kyGetStub = sinon.stub(ky, 'get');
     });
 
-    afterEach(function () {
+    afterEach(() => {
         sinon.restore();
     });
 
-    it('should retrieve settings from Ghost', async function () {
+    it('should retrieve settings from Ghost', async () => {
         const settings = {
             site: {
                 description: 'foo',
@@ -41,7 +41,7 @@ describe('getSiteSettings', function () {
         assert.strictEqual(kyGetStub.firstCall.args[0], `https://${host}/ghost/api/admin/site/`);
     });
 
-    it('should use defaults for missing settings', async function () {
+    it('should use defaults for missing settings', async () => {
         let result;
 
         // Missing description

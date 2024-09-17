@@ -19,13 +19,14 @@
     "test:integration": "c8 --src src --all --reporter text --reporter cobertura mocha -r tsx './src/**/*.integration.test.ts'",
     "test:code": "c8 --src src --all --reporter text --reporter cobertura mocha -r tsx './src/**/*.test.ts'",
     "test:all": "yarn test:types && yarn test:code",
-    "lint:code": "eslint *.js lib/ --ext .js --cache",
+    "lint:code": "biome lint src",
     "lint": "yarn lint:code"
   },
   "files": [
     "src"
   ],
   "devDependencies": {
+    "@biomejs/biome": "1.9.1",
     "@cucumber/cucumber": "10.8.0",
     "@types/mocha": "10.0.7",
     "@types/node": "20.12.12",
