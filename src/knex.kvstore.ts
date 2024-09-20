@@ -1,5 +1,6 @@
 import { KvKey, KvStore, KvStoreSetOptions } from '@fedify/fedify';
 import Knex from 'knex';
+import { handleKvSet } from './migrate/utils';
 
 export class KnexKvStore implements KvStore {
     private constructor(
@@ -52,6 +53,7 @@ export class KnexKvStore implements KvStore {
                     ...values,
                 });
         }
+        await handleKvSet(key, value, this.knex);
     }
 
     async delete(key: KvKey) {
