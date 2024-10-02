@@ -96,22 +96,62 @@ export async function getActivityMeta(uris: string[]): Promise<Map<string, Activ
 
 // Helper function to retrieve a map of replies for an array of activity URIs
 // from the database
-export async function getRepliesMap (uris: string[]): Promise<Map<string, any>> {
+export async function getRepliesMap(uris: string[]) {
+    const query = `
+WITH RECURSIVE activity_hierarchy AS (
+    SELECT
+        kv1.value->>'$.id' AS activity_id,
+        kv1.value->>'$.object.id' AS object_id,
+        kv1.value->>'$.object.inReplyTo' AS in_reply_to,
+        kv1.value as activity
+    FROM
+        key_value kv1
+    WHERE
+        kv1.value->>'$.id' IN (${uris.map(uri => `'${uri}'`).join(',')})
+    UNION ALL
+    SELECT
+        kv2.value->>'$.id' AS activity_id,
+        kv2.value->>'$.object.id' AS object_id,
+        kv2.value->>'$.object.inReplyTo' AS in_reply_to,
+        kv2.value as activity
+    FROM
+        key_value kv2
+    INNER JOIN
+        activity_hierarchy ah ON kv2.value->>'$.object.inReplyTo' = ah.object_id
+)
+SELECT DISTINCT activity_id, object_id, in_reply_to, activity FROM activity_hierarchy;
+`;
+
+    interface Row {
+        activity_id: string;
+        object_id: string;
+        in_reply_to: string;
+        activity: any;
+    }
+
+    const [results] = await client.raw<[Row[]]>(query);
+
     const map = new Map<string, any>();
 
-    const results = await client
-        .select('value')
-        .from('key_value')
-        .where(client.raw('JSON_EXTRACT(value, "$.object.inReplyTo") IS NOT NULL'))
-        .whereIn('key', uris.map(uri => `["${uri}"]`));
+    results.forEach(row => {
+        map.set(row.activity_id, []);
+    });
 
-    for (const {value: result} of results) {
-        const replies = map.get(result.object.inReplyTo) ?? [];
+    results.filter(row => row.in_reply_to).forEach(row => {
+        const parentActivityId = results.find(r => r.object_id === row.in_reply_to)?.activity_id;
 
-        replies.push(result);
+        if (!parentActivityId) {
+            return;
+        }
 
-        map.set(result.object.inReplyTo, replies);
-    }
+        const parentActivity = map.get(parentActivityId);
+
+        if (!parentActivity) {
+            return;
+        }
+
+        parentActivity.push(row.activity);
+    });
 
     return map;
 }

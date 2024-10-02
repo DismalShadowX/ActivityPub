@@ -569,7 +569,7 @@ async function buildActivity(
     if (repliesMap && typeof item.object !== 'string' && item.object.id) {
         item.object.replies = [];
 
-        const replies = repliesMap.get(item.object.id);
+        const replies = repliesMap.get(item.id);
 
         if (replies) {
             const builtReplies = [];
